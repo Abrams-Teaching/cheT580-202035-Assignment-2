@@ -1,103 +1,99 @@
-# Assignment 1:  Git, C, Python, and the GNU Scientific Library
+# Assignment 2:  Spin-Spin Correlation in the Ising Magnet
 
-The purpose of this assignment will be to guide you through setting up your laptop for this course.  This will involve installing some common software you may not already have.  
-Once you have completed Part 1, you can test that your setup is working in Part 2.
+The purpose of this assignment will be to guide you through modifiying the `ising_mc.c` program I demonstrated in class so that it computes the spin-spin correlation function.  You will plot this function for various temperatures.
 
-## Part 1: Preparation
+## Spin-spin correlation
 
-### In Brief
+Correlation between spins (or between a spin and itself) is the idea that the likelihood that the two spins have relative spin values that occur more frequently together than random chance would suggest.  Consider two spins `i` and `j` with spin variables `si` and `sj` respectively.  The expecations `<si>` and `<sj>` are not really interesting; they are just `<s>` since we compute that by averaging over all spins.  The expectation `<si*sj>`, however, is interesting:  if `i` and `j` are more likely to have the same spin value than not, this number is close to 1; if they are more likely to have opposite spin values, this number is close to -1.  We define the correlation function `C(d)` such that
 
-For Windows 10, you will enable Windows Subsystem for Linux, install Ubuntu on it, then in Ubuntu, you will install a C complier some other utilities.  For macOS, you will install a C complier and some other utilities.  For any operating system, you will install a recent Python 3 distrubtion.
+```
+C(d) = <si*sj> - <s>*<s>
+```
 
-### Details: Windows 10-Specific Stuff
+where `d` is the distance (along a row or column) between `i` and `j`.  
 
-1. [Enable Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/) (WSL) and update to version 2 if your specific build of Windows 10 permits it.
-2. Install a Linux distribution **from the Microsoft Store** on top of WSL.  My recommendation is Ubuntu 20.04.
-3. Launch your Linux WSL instance from the Start Menu; you will need to follow prompts for some one-time setup tasks.
-4. At the `$` prompt, do the following:
-   ```bash
-   $ sudo apt install gcc git gsl libgsl-dev gdb
+A temperatures above the critical temperature, this correlation function has the property `C(0) = 1` (since a spin is always positively correlated with itself) that dies out to 0 as `d` gets large.  `d` cannot exceed `L/2` for a finite lattice of side-length `L` with periodic boundaries.  Its decay behavior mimics an exponential:
+
+`C(d) ~ exp(-d/xi)`
+
+where `xi` is called the "correlation length".
+
+At temperatures below the critical temperature, `C(d)` no longer decays to 0 since we have large domains.  
+
+## The Assignment
+
+You are to modify `ising_mc.c` provided in this repository to compute the `C(d)` for lattices of size `L`= 20 and for temperatures of 2.3, 3, 5, and 10.  You should generate a single plot in PNG format that plots `C(d)` vs `d` on `[0:10]` for each of these temperatures on the same axes.
+
+## What to do to the code
+
+### In `main()`:
+
+1. Declare arrays for sisj and sisjsum
    ```
-   Answer yes to any prompts.
-5. Python options (you can do either or both):
-    1. Install a python distribution inside your Ubuntu WSL instance:
-       ```bash
-       $ sudo apt install python3
-       ```
-    2. Install python natively in Windows from python.org (make sure you check the box Add Python to PATH in the install window!)
-6. The baseline Python installation lacks some packages that we will use.  To add them to your Python, use the command
-   ```bash
-   pip install matplotlib
-   ```
-   You can issue this command at the WSL `$` prompt to update your Python in Ubuntu, or at a PowerShell or `cmd` prompt in Windows 10 to update your Windows 10 Python.
-7. (Recommended, not required)  Install [Windows Terminal](https://docs.microsoft.com/en-us/windows/terminal/)
-
-### Details: macOS-Specific Stuff
-
-(disclaimer--I am not a Mac person so you might have to muddle through this)
-1. Install/enable the [Terminal](https://www.howtogeek.com/682770/how-to-open-the-terminal-on-a-mac/) app if you haven't already.
-2. (Recommended) At the terminal command-line, [switch your default shell from `zsh` to `bash`]({https://www.howtogeek.com/444596/how-to-change-the-default-shell-to-bash-in-macos-catalina/).
-3. Install xCode.  This should provide `gcc` (the C compiler) and `git` (revision control).
-4. Install the GNU Scientific Library.  You need to either use homebrew or [compile it yourself](https://gist.github.com/TysonRayJones/af7bedcdb8dc59868c7966232b4da903).
-5. Install Python from python.org.
-6. Install matplotlib in Python using `pip install matplotlib` at the command line.
-
-### Common Stuff
-
-1. (Recommended) Install [VSCode](https://code.visualstudio.com/download).  If you don't, it is expected you prefer to work with some other text editor or integrated development enviroment.
-2. Install [VMD](http://www.ks.uiuc.edu/Research/vmd).
-
-### Configure git (One-time only commands)
-
-1. If you have not already done so, create a public-private key pair with the `ssh-keygen` command:
-   ```
-   $ ssh-keygen -t rsa -b 2048
-   ```
-   Just use an empty passphrase and let it store the pair in the default location.  The options above are semi-standard: a 2,048-bit key pair using the RSA scheme.  `ssh-keygen` has other options for key pairs.
-
-2. Provide your github account with your *public* key.  See instructions for this at [this link](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/).
-
-3. Now, make a nice clean directory into which you can clone all assignment and project repositories (as they are released):
-
-   ```bash
-   $ cd
-   $ mkdir cheT580
-   $ cd cheT580
+   double * sisj, * sisjsum;
    ```
 
-## Part 2: The Assignment
+2. Allocate:
+   ```
+   sisj=(double*)malloc(L/2*sizeof(double));
+   sisjsum=(double*)malloc(L/2*sizeof(double));
+   ```
 
-1. Clone this repository to your local machine, and `cd` into the working directory, and launch VScode:
-   ```bash
-   $ git clone git@github.com:<repository-name>
-   $ cd <repository-name>
-   $ code .
-   ```
-   Here, `<repository-name>` is a custom name for your copy of the assignment repository, which you should see on the assignment page in Gitub Classroom.
-2. Compile the C program `gsl_test.c`, and run it:
-   ```bash
-   $ gcc -o gsl_test.c -lgsl
-   $ ./gsl_test
-   ```
-   You can do this at a standalone terminal command-line, or inside VScode.  Note that a new file has been created.  You can look at this file by opening it in VScode.  Try to match up what you see in the file with the contents of the C program.
-3. Modify `gsl_test.c` to generate the additional required output, recompile, and run.
-4. Compile the program `hhd.c`, and run it:
-   ```bash
-   $ gcc -o hhd hhd.c -lm
-   $ ./hhd 10
-   ```
-   The `10` command-line argument is a number of "generations" of a fractal curve called the Harter-Heighway Dragon that `hhd.c` will generate.  Note the name of the output file this execution generates.
-5. Run the python script `plot_dragon.py` according to its instructions.  Note the name of the image file generated.  You can also view this image from VScode, or as a photo.
-6. **Submit** your results by adding, committing, and pushing:
-   ```
-   $ git add .
-   $ git commit -m "My Assignment 1 Results"
-   $ git push
-   ```
-   You can add, commit, and push as many times as you like up to the deadline.
+3. Sample:
+  - include `sisj` as an argument to `samp()`
+  - include a for loop from 0 to L/2 to update the sisjsum tally:
+    ```
+    for (i=0;i<L/2;i++) sisjsum[i]+=sisj[i];
+    ```
 
-Some things to keep in mind:
+4. Output:
+   ```
+   for (i=0;i<L/2;i++)
+    fprintf(stdout,"%i  %.5lf\n",i,
+      sisjsum[i]/nSamp-ssum*ssum/(nSamp*nSamp));
+   ```
 
-* If you are using VScode, you should be seeing prompts to install certain "extensions"; I recommend you install any extensions suggested that are provided by Microsoft; this will probably amount to the C/C++ extension and the Python extension.
-* Note any error messages generated by any of these commands; I recommend keeping a log of them in text file that you can show me.  Our primary objective with this assignment is to be sure your laptop is minimally functional for this course. 
-* The Ubuntu installation on top of WSL is a fully-functional Linux command-line.  All the contents of your `C:\>` drive are visible from within Ubuntu at the path `/mnt/c/` (other drive letters are similarly mapped).  I recommend that you keep your work in this course **inside** your Linux installation filesystem, `/home/<your-username>/`.  Should you ever need to see anything inside Linux from Windows, you can copy it out to `/mnt/c/Users/<your-username>/` or some subfolder of that.
+### In `samp()`
+
+1. Include `double * sisj` as a parameter declaration and `d` as a local integer
+
+2. Before the loop over all spins, initialize `sisj`
+   ```
+   for (d=0;d<L/2;d++) sisj[d]=0.0;
+   ```
+
+3. Inside the loop over all spins, increment `sisj` by considering only eastern and southern neighbors a distance `d` away:
+   ```
+   for (d=0;d<L/2;d++) 
+	  sisj[d]+=F[i][j]*(F[(i+d)%L][j]+F[i][(j+d)%L]);
+   ```
+
+4. At the end of `samp()` divide all elements if `sisj[]` by `2*L*L`
+   ```
+   for (d=0;d<L/2;d++) 
+     sisj[d]/=(2*L*L);
+   ```
+
+## Generating a plot
+
+You must write a short python script to generate the required plot.  A workflow you might want to consider might look like this:
+
+1. Run the code for each temperature for at least a few thousand cycles, and copy and paste the numerical output into a unique file for each run; for instace `C-T1.dat`, `C-T2.dat`, etc.
+
+2. Edit the python template `my_plot.py` to read each file into unique arrays:
+
+```python
+d1,C1=np.loadtxt('C-T1.dat',unpack=True)
+d2,C2=np.loadtxt('C-T2.dat',unpack=True)
+(etc)
+```
+
+3. ...and for each, issue a plot command, e.g.,
+
+```
+ax.scatter(d1,C1,label='T=2.3')
+```
+
+## Submitting
+
+Just push this repository once you're happy with your plot.
